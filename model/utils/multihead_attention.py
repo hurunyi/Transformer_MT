@@ -58,6 +58,7 @@ class MultiheadAttention(nn.Module):
 
     See "Attention Is All You Need" for more details.
     """
+
     def __init__(
         self,
         embed_dim,
@@ -349,11 +350,11 @@ class MultiheadAttention(nn.Module):
 
     @staticmethod
     def _append_prev_key_padding_mask(
-            key_padding_mask: Optional[Tensor],
-            prev_key_padding_mask: Optional[Tensor],
-            batch_size: int,
-            src_len: int,
-            static_kv: bool,
+        key_padding_mask: Optional[Tensor],
+        prev_key_padding_mask: Optional[Tensor],
+        batch_size: int,
+        src_len: int,
+        static_kv: bool,
     ) -> Optional[Tensor]:
         # saved key padding masks have shape (bsz, seq_len)
         if prev_key_padding_mask is not None and static_kv:
@@ -392,17 +393,17 @@ class MultiheadAttention(nn.Module):
         return new_key_padding_mask
 
     def myforward(
-            self,
-            query,
-            key: Optional[Tensor],
-            value: Optional[Tensor],
-            key_padding_mask: Optional[Tensor] = None,
-            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-            need_weights: bool = True,
-            static_kv: bool = False,
-            attn_mask: Optional[Tensor] = None,
-            before_softmax: bool = False,
-            need_head_weights: bool = False,
+        self,
+        query,
+        key: Optional[Tensor],
+        value: Optional[Tensor],
+        key_padding_mask: Optional[Tensor] = None,
+        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+        need_weights: bool = True,
+        static_kv: bool = False,
+        attn_mask: Optional[Tensor] = None,
+        before_softmax: bool = False,
+        need_head_weights: bool = False,
     ) -> Tuple[Tensor, Optional[Tensor]]:
         """
         Args:
@@ -426,12 +427,12 @@ class MultiheadAttention(nn.Module):
 
         q *= self.scaling
 
-        q = q.contiguous().view(tgt_len, bsz * self.num_heads, self.head_dim).transpose(0,1)
-        k = k.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0,1)
-        v = v.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0,1)
+        q = q.contiguous().view(tgt_len, bsz * self.num_heads, self.head_dim).transpose(0, 1)
+        k = k.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0, 1)
+        v = v.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0, 1)
 
         # (bsz * num_heads, tgt_len, src_len)
-        attn_weights = torch.bmm(q, k.transpose(1,2))
+        attn_weights = torch.bmm(q, k.transpose(1, 2))
         if attn_mask:
             attn_weights += attn_mask
         if key_padding_mask:
@@ -442,7 +443,7 @@ class MultiheadAttention(nn.Module):
         # (bsz * num_heads, seq_len, head_dim)
         attn = torch.bmm(attn_probs, v)
         # (seq_len, bsz, embed_dim)
-        attn = attn.transpose(0,1).contiguous().view(-1, bsz, self.num_heads * self.head_dim)
+        attn = attn.transpose(0, 1).contiguous().view(-1, bsz, self.num_heads * self.head_dim)
         attn = self.out_proj(attn)
 
         if need_weights:
