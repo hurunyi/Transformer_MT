@@ -482,13 +482,13 @@ class SequenceGenerator(nn.Module):
 
         tokens_clone[:, step] = self.eos
         attn_clone = (
-            attn.index_select(0, bbsz_idx)[:, :, 1: step + 2]
+            attn.index_select(0, bbsz_idx)[:, :, 1:step + 2]
             if attn is not None
             else None
         )
 
         # compute scores per token position
-        pos_scores = scores.index_select(0, bbsz_idx)[:, : step + 1]
+        pos_scores = scores.index_select(0, bbsz_idx)[:, :step + 1]
         pos_scores[:, step] = eos_scores
         # convert from cumulative to per-position scores
         pos_scores[:, 1:] = pos_scores[:, 1:] - pos_scores[:, :-1]
