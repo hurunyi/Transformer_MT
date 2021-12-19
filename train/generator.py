@@ -152,7 +152,7 @@ class SequenceGenerator(nn.Module):
         return self._generate(sample, **kwargs)
 
     def _generate(self, sample: Dict[str, Dict[str, Tensor]], bos_token: Optional[int] = None):
-        incremental_state = {}
+        incremental_state: Dict[str, Dict[str, Optional[Tensor]]] = {}
 
         net_input = sample["net_input"]
 
