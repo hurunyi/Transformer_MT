@@ -151,6 +151,19 @@ class MultiheadAttention(nn.Module):
         before_softmax: bool = False,
         need_head_weights: bool = False,
     ) -> Tuple[Tensor, Optional[Tensor]]:
+        """
+        Args:
+            query: (seq_len, bsz, embed_dim)
+            key: (seq_len, bsz, embed_dim)
+            value: (seq_len, bsz, embed_dim)
+            key_padding_mask: (bsz, seq_len)
+            incremental_state: Dict
+            need_weights: bool
+            static_kv: bool
+            attn_mask: (seq_len, seq_len)
+            before_softmax: bool
+            need_head_weights: bool
+        """
         if need_head_weights:
             need_weights = True
 
@@ -391,64 +404,3 @@ class MultiheadAttention(nn.Module):
         else:
             new_key_padding_mask = prev_key_padding_mask
         return new_key_padding_mask
-
-    def myforward(
-        self,
-        query,
-        key: Optional[Tensor],
-        value: Optional[Tensor],
-        key_padding_mask: Optional[Tensor] = None,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        need_weights: bool = True,
-        static_kv: bool = False,
-        attn_mask: Optional[Tensor] = None,
-        before_softmax: bool = False,
-        need_head_weights: bool = False,
-    ) -> Tuple[Tensor, Optional[Tensor]]:
-        """
-        Args:
-            query: (seq_len, bsz, embed_dim)
-            key: (seq_len, bsz, embed_dim)
-            value: (seq_len, bsz, embed_dim)
-            key_padding_mask: (bsz, seq_len)
-            incremental_state: Dict
-            need_weights: bool
-            static_kv: bool
-            attn_mask: (seq_len, seq_len)
-            before_softmax: bool
-            need_head_weights: bool
-        """
-        tgt_len, bsz, embed_dim = query.size()
-        src_len = tgt_len
-
-        q = self.q_proj(query)
-        k = self.k_proj(key)
-        v = self.v_proj(value)
-
-        q *= self.scaling
-
-        q = q.contiguous().view(tgt_len, bsz * self.num_heads, self.head_dim).transpose(0, 1)
-        k = k.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0, 1)
-        v = v.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0, 1)
-
-        # (bsz * num_heads, tgt_len, src_len)
-        attn_weights = torch.bmm(q, k.transpose(1, 2))
-        if attn_mask:
-            attn_weights += attn_mask
-        if key_padding_mask:
-            attn_weights = attn_weights.masked_fill(key_padding_mask.unsqueeze(1).bool(), float("-inf"))
-
-        attn_weights = F.softmax(attn_weights, dim=-1)
-        attn_probs = self.dropout_module(attn_weights)
-        # (bsz * num_heads, seq_len, head_dim)
-        attn = torch.bmm(attn_probs, v)
-        # (seq_len, bsz, embed_dim)
-        attn = attn.transpose(0, 1).contiguous().view(-1, bsz, self.num_heads * self.head_dim)
-        attn = self.out_proj(attn)
-
-        if need_weights:
-            attn_weights = attn_weights.view(bsz, -1, tgt_len, src_len)
-            if not need_head_weights:
-                attn_weights = torch.mean(attn_weights, dim=1)
-
-        return attn, attn_weights
