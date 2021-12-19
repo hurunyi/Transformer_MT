@@ -17,12 +17,12 @@ class BeamSearch(nn.Module):
 		self.stop_on_max_len = False
 
 	def step(
-			self,
-			step: int,
-			lprobs,
-			scores: Optional[Tensor],
-			prev_output_tokens: Optional[Tensor] = None,
-			original_batch_idxs: Optional[Tensor] = None,
+		self,
+		step: int,
+		lprobs,
+		scores: Optional[Tensor],
+		prev_output_tokens: Optional[Tensor] = None,
+		original_batch_idxs: Optional[Tensor] = None,
 	):
 		"""Take a single search step.
 
@@ -81,22 +81,22 @@ class BeamSearch(nn.Module):
 
 class SequenceGenerator(nn.Module):
 	def __init__(
-			self,
-			model,
-			tgt_dict,
-			beam_size=1,
-			max_len_a=0,
-			max_len_b=200,
-			max_len=0,
-			min_len=1,
-			normalize_scores=True,
-			len_penalty=1.0,
-			unk_penalty=0.0,
-			temperature=1.0,
-			match_source_len=False,
-			search_strategy=None,
-			eos=None,
-			symbols_to_strip_from_output=None,
+		self,
+		model,
+		tgt_dict,
+		beam_size=1,
+		max_len_a=0,
+		max_len_b=200,
+		max_len=0,
+		min_len=1,
+		normalize_scores=True,
+		len_penalty=1.0,
+		unk_penalty=0.0,
+		temperature=1.0,
+		match_source_len=False,
+		search_strategy=None,
+		eos=None,
+		symbols_to_strip_from_output=None,
 	):
 		"""Generates translations of a given source sentence."""
 		super().__init__()
@@ -134,16 +134,16 @@ class SequenceGenerator(nn.Module):
 		# As a module attribute, setting it would break in multithread
 		# settings when the model is shared.
 		self.should_set_src_lengths = (
-				hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
+			hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
 		)
 
 		self.model.eval()
 
 	@torch.no_grad()
 	def forward(
-			self,
-			sample: Dict[str, Dict[str, Tensor]],
-			bos_token: Optional[int] = None,
+		self,
+		sample: Dict[str, Dict[str, Tensor]],
+		bos_token: Optional[int] = None,
 	):
 		return self._generate(sample, bos_token=bos_token)
 
@@ -386,7 +386,7 @@ class SequenceGenerator(nn.Module):
 			eos_mask[:, :beam_size] = ~((~cands_to_ignore) & (~eos_mask[:, :beam_size]))
 			active_mask = torch.add(
 				eos_mask.type_as(cand_offsets) * cand_size,
-				cand_offsets[ :eos_mask.size(1)],
+				cand_offsets[:eos_mask.size(1)],
 			)
 
 			# get the top beam_size active hypotheses, which are just
@@ -454,18 +454,18 @@ class SequenceGenerator(nn.Module):
 		return tensor.view(-1, tensor.size(-1))
 
 	def finalize_hypos(
-			self,
-			step: int,
-			bbsz_idx,
-			eos_scores,
-			tokens,
-			scores,
-			finalized: List[List[Dict[str, Tensor]]],
-			finished: List[bool],
-			beam_size: int,
-			attn: Optional[Tensor],
-			src_lengths,
-			max_len: int,
+		self,
+		step: int,
+		bbsz_idx,
+		eos_scores,
+		tokens,
+		scores,
+		finalized: List[List[Dict[str, Tensor]]],
+		finished: List[bool],
+		beam_size: int,
+		attn: Optional[Tensor],
+		src_lengths,
+		max_len: int,
 	):
 		"""Finalize hypothesis, store finalized information in `finalized`, and change `finished` accordingly.
 		A sentence is finalized when {beam_size} finished items have been collected for it.
@@ -478,7 +478,7 @@ class SequenceGenerator(nn.Module):
 		# clone relevant token and attention tensors.
 		# tokens is (batch * beam, max_len). So the index_select
 		# gets the newly EOS rows, then selects cols 1..{step + 2}
-		tokens_clone = tokens.index_select(0, bbsz_idx)[:, 1:step + 2] # skip the first index, which is EOS
+		tokens_clone = tokens.index_select(0, bbsz_idx)[:, 1:step + 2]  # skip the first index, which is EOS
 
 		tokens_clone[:, step] = self.eos
 		attn_clone = (
@@ -550,7 +550,7 @@ class SequenceGenerator(nn.Module):
 			unique_unfin_idx: int = unique_s - (unique_sent << 32)
 
 			if not finished[unique_sent] and self.is_finished(
-					step, unique_unfin_idx, max_len, len(finalized[unique_sent]), beam_size
+				step, unique_unfin_idx, max_len, len(finalized[unique_sent]), beam_size
 			):
 				finished[unique_sent] = True
 				newly_finished.append(unique_unfin_idx)
@@ -559,11 +559,11 @@ class SequenceGenerator(nn.Module):
 
 	@staticmethod
 	def is_finished(
-			step: int,
-			unfin_idx: int,
-			max_len: int,
-			finalized_sent_len: int,
-			beam_size: int,
+		step: int,
+		unfin_idx: int,
+		max_len: int,
+		finalized_sent_len: int,
+		beam_size: int,
 	):
 		"""
 		Check whether decoding for a sentence is finished, which
@@ -577,11 +577,11 @@ class SequenceGenerator(nn.Module):
 
 	@staticmethod
 	def generate_forward_decoder(
-			model,
-			tokens,
-			encoder_out: List[Dict[str, List[Tensor]]],
-			incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
-			temperature: float = 1.0,
+		model,
+		tokens,
+		encoder_out: List[Dict[str, List[Tensor]]],
+		incremental_state: Dict[str, Dict[str, Optional[Tensor]]],
+		temperature: float = 1.0,
 	):
 		decoder_out = model.decoder.forward(
 			tokens,
